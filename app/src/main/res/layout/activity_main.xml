@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:layout_width="1280dp"
     android:layout_height="match_parent"
-
     tools:context="tv.lesports.com.tvrecyclerview.MainActivity">
+
+
 
     <tv.lesports.com.tvrecyclerview.TvRecyclerView
         android:id="@+id/search_result_recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="30dp"
-        android:layout_marginLeft="60dp"
-        android:scrollbars="none" />
+        android:layout_marginTop="27dp"
+        android:layout_marginLeft="44dp"
+        android:layout_marginRight="30dp"
+        android:scrollbars="none"/>
 
 </RelativeLayout>

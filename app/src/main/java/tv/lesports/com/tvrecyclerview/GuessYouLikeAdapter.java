@@ -1,14 +1,15 @@
 package tv.lesports.com.tvrecyclerview;
 
 import android.content.Context;
+import android.support.v7.widget.GridLayoutManager;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.List;
-
-import tv.lesports.com.tvrecyclerview.R;
 
 /**
  * Created by liuyu on 17/1/20.
@@ -17,11 +18,15 @@ import tv.lesports.com.tvrecyclerview.R;
  * (2)重写getItemId()方法,让每个view都有各自的id
  * (3)RecyclerView的动画必须去掉
  */
-public class GuessYouLikeAdapter extends BaseRecyclerAdapter<GuessYouLikeAdapter.GuessYouLikeViewHolder,SearchResultModel> {
+public class GuessYouLikeAdapter extends BaseRecyclerAdapter<BaseRecyclerViewHolder,SearchResultModel> {
 
 
     private static final String TAG = "GuessYouLikeAdapter";
+    private final TvRecyclerView mRecyclerView;
+    private  GridLayoutManager mLayoutManager;
     private OnLeftEdgeListener mOnLeftEdgeListener;
+
+
 
 
     public interface OnLeftEdgeListener {
@@ -32,25 +37,55 @@ public class GuessYouLikeAdapter extends BaseRecyclerAdapter<GuessYouLikeAdapter
         this.mOnLeftEdgeListener = listener;
     }
 
-    public GuessYouLikeAdapter(Context context, List<SearchResultModel> dataList) {
+    public GuessYouLikeAdapter(Context context, TvRecyclerView recyclerView, GridLayoutManager layoutManager, List<SearchResultModel> dataList) {
         super(context,dataList);
+        mRecyclerView = recyclerView;
+        mLayoutManager = layoutManager;
+        mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                if(position == 0 || position == 1){
+                    return 2;
+                }
+                return 1;
+            }
+        });
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if(position == 0 || position == 1){
+            return 2;
+        }
+        return 1;
+    }
+
+    @Override
+    public BaseRecyclerViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
+
+        switch (viewType){
+            case 2:
+                return new SearchTopicViewHolder(mInflate.inflate(R.layout.lesports_search_topic_result_layout, viewGroup, false));
+            case 1:
+                return new GuessYouLikeViewHolder(mInflate.inflate(R.layout.lesports_search_result_layout, viewGroup, false));
+        }
+       return null;
     }
 
 
-
     @Override
-    public GuessYouLikeViewHolder onCreateViewHolder(ViewGroup viewGroup, int position) {
-        View itemView = mInflate.inflate(R.layout.lesports_search_result_layout, viewGroup, false);
-        return new GuessYouLikeViewHolder(itemView);
-    }
-
-
-    @Override
-    public void onBindBaseViewHolder(final GuessYouLikeViewHolder viewHolder, final int position) {
+    protected void onBindBaseViewHolder(final BaseRecyclerViewHolder viewHolder, final int position) {
 
         if (getItemCount() > 0) {
+            if(viewHolder instanceof GuessYouLikeViewHolder){
+                final GuessYouLikeViewHolder holder = (GuessYouLikeViewHolder)viewHolder;
+                holder.setData(mDataList.get(position));
 
-            viewHolder.setData(mDataList.get(position));
+
+            }else if(viewHolder instanceof SearchTopicViewHolder){
+                SearchTopicViewHolder topicViewHolder = (SearchTopicViewHolder)viewHolder;
+                topicViewHolder.setData(mDataList.get(position));
+            }
 
             viewHolder.itemView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
                 @Override
@@ -65,22 +100,43 @@ public class GuessYouLikeAdapter extends BaseRecyclerAdapter<GuessYouLikeAdapter
 
                 }
             });
+            /**
+             * (1)这个方法内还可以做边界的焦点处理
+             * mRecyclerView.setNextFocusLeftId();//如果是到了左边缘,设置左边一排的view往左的焦点
+             * mRecyclerView.setNextFocusRightId();//如果是到了右边缘,设置右边一排的view网右的焦点
+             */
+            if(mRecyclerView.isLeftEdge(position)){
+                viewHolder.itemView.setNextFocusLeftId(10000);
+            }
 
-          /*  viewHolder.itemView.setOnKeyListener(new View.OnKeyListener() {
+            //(2)通过设置onKeyListener,屏蔽边界按键事件
+            viewHolder.itemView.setOnKeyListener(new View.OnKeyListener() {
                 @Override
                 public boolean onKey(View view, int keyCode, KeyEvent event) {
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
+
                         switch (keyCode) {
                             case KeyEvent.KEYCODE_DPAD_LEFT:
-                                if (position % 4 == 0 && mOnLeftEdgeListener != null) {
+                                Log.i(TAG,"isLeftEdge = " + mRecyclerView.isLeftEdge(position));
+                                if (mOnLeftEdgeListener != null ) {
                                     mOnLeftEdgeListener.onLeftEdge();
                                     return true;
                                 }
+                                break;
+                            case  KeyEvent.KEYCODE_DPAD_RIGHT:
+                                Log.i(TAG,"isRightEdge = " + mRecyclerView.isRightEdge(position));
+                                break;
+                            case KeyEvent.KEYCODE_DPAD_UP:
+                                Log.i(TAG,"isTopEdge = " + mRecyclerView.isTopEdge(position));
+                                break;
+                            case KeyEvent.KEYCODE_DPAD_DOWN:
+                                Log.i(TAG,"isBottomEdge = " + mRecyclerView.isBottomEdge(position));
+                                break;
                         }
                     }
                     return false;
                 }
-            });*/
+            });
         }
 
     }
@@ -112,7 +168,37 @@ public class GuessYouLikeAdapter extends BaseRecyclerAdapter<GuessYouLikeAdapter
             }
 
             tvResultTitle.setSelected(false);
-
+            tvResultTitle.setText(model.id + "");
         }
     }
-}
+
+    public static class SearchTopicViewHolder extends BaseRecyclerViewHolder {
+        public ImageView ivResultImage;
+        public TextView tvResultTitle;
+
+
+        protected SearchTopicViewHolder(View itemView) {
+            super(itemView);
+            ivResultImage = (ImageView) itemView.findViewById(R.id.iv_result_image);
+            tvResultTitle = (TextView) itemView.findViewById(R.id.tv_result_title);
+        }
+
+        @Override
+        public void focusIn() {
+            tvResultTitle.setSelected(true);
+        }
+
+        @Override
+        public void focusOut() {
+            tvResultTitle.setSelected(false);
+        }
+
+        public void setData(final SearchResultModel model) {
+            if (model == null) {
+                return;
+            }
+
+            tvResultTitle.setSelected(false);
+            tvResultTitle.setText(model.id + "");
+        }
+    }}

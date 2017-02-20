@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -28,8 +29,14 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mRecyclerView = (TvRecyclerView) findViewById(R.id.search_result_recyclerView);
-        mLayoutManager = new TvGridLayoutManager(this, 4);
+
+        mRecyclerView.setFocusable(false);
+        //去掉动画,否则当notify数据的时候,焦点会丢失
+        mRecyclerView.setItemAnimator(null);
+
+        mLayoutManager = new TvGridLayoutManager(this,4);
         mLayoutManager.setOrientation(GridLayoutManager.VERTICAL);
+
         mRecyclerView.setLayoutManager(mLayoutManager);
 
 
@@ -48,15 +55,15 @@ public class MainActivity extends Activity {
                 mHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        mAdapter.addDataList(getMoreData());
-                        mAdapter.notifyDataSetChanged();
+                        //mAdapter.addDataList(getMoreData());
+                       // mAdapter.notifyDataSetChanged();
                     }
                 },200);
             }
         });
 
         initData();
-        mAdapter = new GuessYouLikeAdapter(this, dataList);
+        mAdapter = new GuessYouLikeAdapter(this,mRecyclerView,mLayoutManager, dataList);
         mRecyclerView.setAdapter(mAdapter);
 
     }

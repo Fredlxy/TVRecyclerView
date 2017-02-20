@@ -5,14 +5,17 @@ import android.content.res.TypedArray;
 import android.graphics.Rect;
 import android.os.Build;
 import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.FocusFinder;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import tv.lesports.com.tvrecyclerview.R;
 
@@ -304,18 +307,6 @@ public class TvRecyclerView extends RecyclerView {
     }
 
 
-    private int getPositionByView(View view) {
-        if (view == null) {
-            return NO_POSITION;
-        }
-        LayoutParams params = (LayoutParams) view.getLayoutParams();
-        if (params == null || params.isItemRemoved()) {
-            // when item is removed, the position value can be any value.
-            return NO_POSITION;
-        }
-        return getChildAdapterPosition(view);
-    }
-
     /***********
      * 按键加载更多 start
      **********/
@@ -456,6 +447,177 @@ public class TvRecyclerView extends RecyclerView {
         if (getLayoutManager() != null) {
             super.onDetachedFromWindow();
         }
+    }
+
+
+    /**
+     * 是否是最右边的item，如果是竖向，表示右边，如果是横向表示下边
+     *
+     * @param childPosition
+     * @return
+     */
+    public boolean isRightEdge(int childPosition) {
+        LayoutManager layoutManager = getLayoutManager();
+
+        if (layoutManager instanceof GridLayoutManager) {
+
+            GridLayoutManager gridLayoutManager = (GridLayoutManager) layoutManager;
+            GridLayoutManager.SpanSizeLookup spanSizeLookUp = gridLayoutManager.getSpanSizeLookup();
+
+            int totalSpanCount = gridLayoutManager.getSpanCount();
+            int totalItemCount = gridLayoutManager.getItemCount();
+            int childSpanCount = 0;
+
+            for (int i = 0; i <= childPosition; i++) {
+                childSpanCount += spanSizeLookUp.getSpanSize(i);
+            }
+            if (isVertical()) {
+                if (childSpanCount % gridLayoutManager.getSpanCount() == 0) {
+                    return true;
+                }
+            } else {
+                int lastColumnSize = totalItemCount % totalSpanCount;
+                if (lastColumnSize == 0) {
+                    lastColumnSize = totalSpanCount;
+                }
+                if (childSpanCount > totalItemCount - lastColumnSize) {
+                    return true;
+                }
+            }
+
+        } else if (layoutManager instanceof LinearLayoutManager) {
+            if (isVertical()) {
+                return true;
+            }else{
+                return childPosition == getLayoutManager().getItemCount() - 1;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 是否是最左边的item，如果是竖向，表示左方，如果是横向，表示上边
+     *
+     * @param childPosition
+     * @return
+     */
+    public boolean isLeftEdge(int childPosition) {
+        LayoutManager layoutManager = getLayoutManager();
+        if (layoutManager instanceof GridLayoutManager) {
+            GridLayoutManager gridLayoutManager = (GridLayoutManager) layoutManager;
+            GridLayoutManager.SpanSizeLookup spanSizeLookUp = gridLayoutManager.getSpanSizeLookup();
+
+            int totalSpanCount = gridLayoutManager.getSpanCount();
+            int childSpanCount = 0;
+            for (int i = 0; i <= childPosition; i++) {
+                childSpanCount += spanSizeLookUp.getSpanSize(i);
+            }
+            if (isVertical()) {
+                if (childSpanCount % gridLayoutManager.getSpanCount() == 1) {
+                    return true;
+                }
+            } else {
+                if (childSpanCount <= totalSpanCount) {
+                    return true;
+                }
+            }
+
+        } else if (layoutManager instanceof LinearLayoutManager) {
+            if (isVertical()) {
+                return true;
+            } else {
+                return childPosition == 0;
+            }
+
+        }
+
+        return false;
+    }
+
+    /**
+     * 是否是最上边的item，以recyclerview的方向做参考
+     *
+     * @param childPosition
+     * @return
+     */
+    public boolean isTopEdge(int childPosition) {
+        LayoutManager layoutManager = getLayoutManager();
+        if (layoutManager instanceof GridLayoutManager) {
+            GridLayoutManager gridLayoutManager = (GridLayoutManager) layoutManager;
+            GridLayoutManager.SpanSizeLookup spanSizeLookUp = gridLayoutManager.getSpanSizeLookup();
+
+            int totalSpanCount = gridLayoutManager.getSpanCount();
+
+            int childSpanCount = 0;
+            for (int i = 0; i <= childPosition; i++) {
+                childSpanCount += spanSizeLookUp.getSpanSize(i);
+            }
+
+            if (isVertical()) {
+                if (childSpanCount <= totalSpanCount) {
+                    return true;
+                }
+            } else {
+                if (childSpanCount % totalSpanCount == 1) {
+                    return true;
+                }
+            }
+
+
+        } else if (layoutManager instanceof LinearLayoutManager) {
+            if (isVertical()) {
+                return childPosition == 0;
+            } else {
+                return true;
+            }
+
+        }
+
+        return false;
+    }
+
+    /**
+     * 是否是最下边的item，以recyclerview的方向做参考
+     *
+     * @param childPosition
+     * @return
+     */
+    public boolean isBottomEdge(int childPosition) {
+        LayoutManager layoutManager = getLayoutManager();
+        if (layoutManager instanceof GridLayoutManager) {
+            GridLayoutManager gridLayoutManager = (GridLayoutManager) layoutManager;
+            GridLayoutManager.SpanSizeLookup spanSizeLookUp = gridLayoutManager.getSpanSizeLookup();
+            int itemCount = gridLayoutManager.getItemCount();
+            int childSpanCount = 0;
+            int totalSpanCount = gridLayoutManager.getSpanCount();
+            for (int i = 0; i <= childPosition; i++) {
+                childSpanCount += spanSizeLookUp.getSpanSize(i);
+            }
+            if (isVertical()) {
+                //最后一行item的个数
+                int lastRowCount = itemCount % totalSpanCount;
+                if (lastRowCount == 0) {
+                    lastRowCount = gridLayoutManager.getSpanCount();
+                }
+                if (childSpanCount > itemCount - lastRowCount) {
+                    return true;
+                }
+            } else {
+                if (childSpanCount % totalSpanCount == 0) {
+                    return true;
+                }
+            }
+
+        } else if (layoutManager instanceof LinearLayoutManager) {
+            if (isVertical()) {
+                return childPosition == getLayoutManager().getItemCount() - 1;
+            } else {
+                return true;
+            }
+
+        }
+        return false;
     }
 
 
